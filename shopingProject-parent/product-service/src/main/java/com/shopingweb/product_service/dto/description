@@ -1,0 +1,16 @@
+| Function    | Explanation                                  |
+| ----------- | -------------------------------------------- |
+| Data hiding | Don’t expose sensitive fields                |
+| Security    | Prevent mass assignment attacks              |
+| Validation  | Apply `@NotNull`, `@Size` only to API fields |
+| Performance | Smaller JSON payloads                        |
+| Flexibility | Change DB without breaking API               |
+
+
+
+| DTO                | Entity                |
+| ------------------ | --------------------- |
+| Used in API layer  | Used in DB layer      |
+| No JPA annotations | Has `@Entity`, `@Id`  |
+| API-specific       | DB-specific           |
+| Safe to expose     | Should NOT be exposed |
