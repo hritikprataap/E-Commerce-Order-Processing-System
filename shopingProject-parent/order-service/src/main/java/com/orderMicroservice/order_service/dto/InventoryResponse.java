@@ -1,4 +1,4 @@
-package com.inventoryMicroservice.inventory_service.dto;
+package com.orderMicroservice.order_service.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
