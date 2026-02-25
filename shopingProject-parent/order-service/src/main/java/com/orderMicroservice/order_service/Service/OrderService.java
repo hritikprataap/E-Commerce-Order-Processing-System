@@ -22,7 +22,7 @@ public class OrderService {
     private final WebClient.Builder webClientBuilder;
 
 
-    public void placeOrder(OrderRequest orderRequest) throws IllegalAccessException {
+    public String placeOrder(OrderRequest orderRequest) throws IllegalAccessException {
         Order order=new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
 
@@ -57,6 +57,7 @@ public class OrderService {
 
         if(allproductsInStock){
             orderRepository.save(order);
+            return "order placed Successfully";
         }
         else{
              throw new IllegalAccessException("product is not in stock try again after sometime");
