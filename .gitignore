@@ -1,15 +1,46 @@
-# Ignore all Spring Boot configuration files
+# =============================
+# Database & Docker volumes
+# =============================
+volume-data/
+data/
+shopingProject-parent/data/
+shopingProject-parent/volume-data/
+
+# MongoDB
+*.wt
+*.lock
+*.turtle
+journal/
+diagnostic.data/
+
+# MySQL
+*.ibd
+*.sdi
+*.sock
+undo_*
+#innodb_*
+
+# Tempo / tracing
+tempo/
+traces/
+
+# Logs
+*.log
+
+# =============================
+# Spring Boot configs
+# =============================
 **/src/main/resources/application.properties
 **/src/main/resources/application.yml
 **/src/main/resources/application-*.properties
 **/src/main/resources/application-*.yml
 
-# Ignore IDE and OS files
+# =============================
+# IDE / OS
+# =============================
 .DS_Store
 .idea/
 *.iml
 target/
 out/
-
-# Ignore local environment files
 .env
