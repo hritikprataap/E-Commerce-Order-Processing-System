@@ -22,7 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @Testcontainers
-@AutoConfigureMockMvc
+
+@AutoConfigureMockMvc(addFilters = false)
 class ProductServiceApplicationTests {
 
 	@Autowired

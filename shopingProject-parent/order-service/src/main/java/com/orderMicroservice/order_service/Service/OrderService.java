@@ -4,9 +4,11 @@ import com.orderMicroservice.order_service.Repository.OrderRepository;
 import com.orderMicroservice.order_service.dto.InventoryResponse;
 import com.orderMicroservice.order_service.dto.OrderLineItemsDto;
 import com.orderMicroservice.order_service.dto.OrderRequest;
+import com.orderMicroservice.order_service.event.OrderPlacedEvent;
 import com.orderMicroservice.order_service.model.Order;
 import com.orderMicroservice.order_service.model.OrderLineItems;
 import lombok.RequiredArgsConstructor;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -20,6 +22,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final WebClient.Builder webClientBuilder;
+    private final KafkaTemplate<String,OrderPlacedEvent> kafkaTemplate;
 
 
     public String placeOrder(OrderRequest orderRequest) throws IllegalAccessException {
@@ -57,6 +60,7 @@ public class OrderService {
 
         if(allproductsInStock){
             orderRepository.save(order);
+            kafkaTemplate.send("notificationTopic",new OrderPlacedEvent(order.getOrderNumber()));
             return "order placed Successfully";
         }
         else{
