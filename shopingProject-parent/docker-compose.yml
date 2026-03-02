@@ -12,6 +12,8 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
       - ./data/mongodb:/data/db
+    networks:
+      - micro-net
 
   mysql:
     image: mysql:8.3.0
@@ -23,6 +25,94 @@ services:
     volumes:
       - ./data/mysql:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - micro-net
+
+
+  discovery-server:
+    image: discovery-server
+    container_name: discovery-server
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8762:8761"
+    networks:
+      - micro-net
+
+  order-service:
+    image: order-service
+    container_name: order-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - mysql
+      - discovery-server
+      - broker
+    ports:
+      - "8081:8081"
+    networks:
+      - micro-net
+
+  inventory-service:
+    image: inventory-service
+    container_name: inventory-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - discovery-server
+      - mysql
+    networks:
+      - micro-net
+
+  notification-service:
+    image: notification-service
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8083'"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      - discovery-server
+      - broker
+    ports:
+      - "8083:8083"
+    networks:
+      - micro-net
+
+  product-service:
+    image: product-service
+    container_name: product-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - mongodb
+      - discovery-server
+    ports:
+      - "8084:8084"
+    networks:
+      - micro-net
+
+  api-gateway:
+    image: apigateway-layered
+    container_name: api-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_ISSUER_URI: http://localhost:8181/auth/realms/spring-boot-microservices-realm
+      JWT_JWK_SET_URI: http://keycloak:8080/auth/realms/spring-boot-microservices-realm/protocol/openid-connect/certs
+    depends_on:
+      - discovery-server
+    ports:
+      - "8080:8080"
+    networks:
+      - micro-net
+
 
   # ------------------ KAFKA STACK ------------------
 
@@ -34,6 +124,9 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - micro-net
+
 
   broker:
     image: confluentinc/cp-kafka:7.5.0
@@ -51,6 +144,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - micro-net
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
@@ -63,6 +158,9 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker:29092
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    networks:
+      - micro-net
+
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -75,7 +173,8 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
       DYNAMIC_CONFIG_ENABLED: "true"
-
+    networks:
+      - micro-net
   # ------------------ KEYCLOAK ------------------
 
   keycloak-mysql:
@@ -88,6 +187,9 @@ services:
       MYSQL_PASSWORD: password
     volumes:
       - ./volume-data/mysql_keycloak_data:/var/lib/mysql
+    networks:
+      - micro-net
+
 
   keycloak:
     container_name: keycloak
@@ -105,14 +207,17 @@ services:
       KC_DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      # --- THE FIXES START HERE ---
+
       KC_HTTP_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HOSTNAME_STRICT_HTTPS: "false"
-      KC_PROXY_HEADERS: "xforwarded" # Tells KC to trust the headers if you add a proxy later
-      KC_HTTP_RELATIVE_PATH: /auth # Optional: keeps the old /auth path style if your app expects it
+      KC_PROXY_HEADERS: "xforwarded"
+      KC_HTTP_RELATIVE_PATH: /auth
     volumes:
       - ./docker/keycloak/realms/:/opt/keycloak/data/import/
+    networks:
+      - micro-net
+
 
   # ------------------ OBSERVABILITY ------------------
 
@@ -122,6 +227,9 @@ services:
     command: ["-config.file=/etc/loki/local-config.yaml"]
     ports:
       - "3100:3100"
+    networks:
+      - micro-net
+
 
   prometheus:
     image: prom/prometheus:v2.46.0
@@ -133,6 +241,8 @@ services:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
+    networks:
+      - micro-net
 
   tempo:
     image: grafana/tempo:2.2.2
@@ -144,6 +254,8 @@ services:
     ports:
       - "3110:3100"
       - "9411:9411"
+    networks:
+      - micro-net
 
   grafana:
     image: grafana/grafana:10.1.0
@@ -156,3 +268,9 @@ services:
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
     ports:
       - "3000:3000"
+    networks:
+      - micro-net
+
+networks:
+  micro-net:
+    driver: bridge

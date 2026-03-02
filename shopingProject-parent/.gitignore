@@ -27,6 +27,20 @@ target/
 **/application.yml
 **/application.yaml
 
+# Track environment profile files for microservices
+!api-gateway/src/main/resources/application-local.properties
+!api-gateway/src/main/resources/application-docker.properties
+!product-service/src/main/resources/application-local.properties
+!product-service/src/main/resources/application-docker.properties
+!discovery-server/src/main/resources/application-local.properties
+!discovery-server/src/main/resources/application-docker.properties
+!order-service/src/main/resources/application-local.properties
+!order-service/src/main/resources/application-docker.properties
+!inventory-service/src/main/resources/application-local.properties
+!inventory-service/src/main/resources/application-docker.properties
+!notification-service/src/main/resources/application-local.properties
+!notification-service/src/main/resources/application-docker.properties
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
